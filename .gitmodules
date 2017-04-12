@@ -1,0 +1,3 @@
+[submodule "pygbif"]
+	path = pygbif
+	url = https://github.com/sckott/pygbif.git
