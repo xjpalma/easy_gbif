@@ -18,10 +18,10 @@ SPECIES module API:
    name_parser
    
 OCCURENCES module API:
-   search   get            count                       download
-            get_verbatim   count_basisofrecord         download_meta
-            get_fragment   count_year                  download_list
-                           count_datasets              download_get
+   search   get            count                      download
+            get_verbatim   count_basisofrecord        download_meta
+            get_fragment   count_year                 download_list
+                           count_datasets             download_get
                            count_countries
                            count_schema
                            count_publishingcountries
@@ -36,9 +36,9 @@ from pygbif import occurrences as occ
 from pygbif import registry
 from pygbif import species
 
-os.environ['GBIF_USER'] = 'i_mribeiro'
-os.environ['GBIF_PWD'] = 'farfalla*20'
-os.environ['GBIF_EMAIL'] = 'i_mribeiro@gmail.com'
+os.environ['GBIF_USER']  = 'jpalma'
+os.environ['GBIF_PWD']   = 'lNi95cKZ@'
+os.environ['GBIF_EMAIL'] = 'jorgempalma@tecnico.ulisboa.pt'
 
 def get_parser():
     '''Get parser object'''
@@ -211,12 +211,18 @@ def get_parser():
                             country – [str] A country, two letter code  '''
 
     ### DOWNLOAD ###
-    #parser.add_argument('-d', '--download',
-    #                    nargs=2,
-    #                    dest='download',
-    #                    help='Spin up a download request for GBIF occurrence data',
-    #                    required=False,
-    #                    action='append')                       
+    parser.add_argument('-d', '--download',
+                        nargs='*',
+                        dest='download',
+                        help='Spin up a download request for GBIF occurrence data',
+                        required=False,
+                        action='append')
+    parser.add_argument('--type',
+                        nargs=1,
+                        dest='type',
+                        help='One of: equals, and, or, lessThan, lessThanOrEquals, greaterThan, greaterThanOrEquals, in, within, not, like',
+                        required=False,
+                        action='store')
                             
     return parser
     
@@ -239,6 +245,28 @@ if __name__ == '__main__':
     args = get_parser().parse_args()
     #print(args)
 
+    ### download ###
+    if args.download is not None:
+        try:
+            if len(args.download) == 1:
+                result = occ.download(args.download[0])
+
+            elif len(args.download) > 1:
+                download_arg = []
+                for item in args.download:
+                    download_arg.append(item)
+
+                if args.type is not None:
+                    key  = 'type'
+                    result = occ.download(download_arg, **{key: args.type[0]})
+                else:
+                    result = occ.download(download_arg)
+
+            print_out(result)
+        except:
+            handle_error()
+
+
     ### search ###
     if args.search is not None:
         try:
@@ -251,7 +279,7 @@ if __name__ == '__main__':
         except:
             handle_error()
     
-### get ###    
+    ### get ###
     if args.get is not None:
         try:
             key  = 'key'
@@ -312,8 +340,7 @@ if __name__ == '__main__':
             print_out(result)    
         except:
             handle_error()
-        
-            
+
     if args.count_country is not None:
         try:
             result = occ.count_countries(**{publishingCountry  : args.count_country[0]})
