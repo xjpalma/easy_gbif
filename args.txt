@@ -1,0 +1,25 @@
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 729'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 7191147'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 8510645'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 1446'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 7191407'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 723'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 8708973'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 28665594'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 28676520'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 28676514'
+'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 28673547'
+
+'taxonKey = 729' (Passeriformes)
+'taxonKey = 7191147'   (Accipitiformes)
+'taxonKey = 1448'     (Apodiformes)
+'taxonKey = 8510645'  (Caprimulgiformes)
+'taxonKey = 1446'     (Columbiformes)
+'taxonKey = 1492'     (Cuculiformes)
+'taxonKey = 7191407'  (Falconiformes)
+'taxonKey = 723'      (Galliformes) 
+'taxonKey = 8708973'  (Otidiformes)
+'taxonKey = 28665594'   (Piciformes)
+'taxonKey = 28676520'   (Strigiformes)
+'taxonKey = 28676514'   (Pteroclidiformes)
+'taxonKey = 28673547'   (Coraciiformes)
