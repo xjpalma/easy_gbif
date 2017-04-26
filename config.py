@@ -1,6 +1,6 @@
 ## GBIF account ##
 
-user  = ''
-pwd   = ''
-email = ''
+user  = 'jpalma'
+pwd   = 'lNi95cKZ'
+email = 'jorgempalma@tecnico.ulisboa.pt'
 

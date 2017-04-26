@@ -69,7 +69,6 @@ if($run_d){
     chomp $d_args;
     exit 0 if ($d_args eq ""); # If empty string, exit.
 
-
     #$d_args = "'basisOfRecord = HUMAN_OBSERVATION' 'country = PT' 'year = 1980,2017' 'month = 3,6' 'hasCoordinate = TRUE' 'hasGeospatialIssue = FALSE' 'taxonKey = 729'";
     
     my $json_txt = `python easy_gbif.py -d -q  $d_args`;
