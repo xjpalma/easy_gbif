@@ -2,6 +2,7 @@
 
 use strict;
 use Getopt::Long;
+use Geo::Hash;
 use Geo::Hash::XS;
 use Geo::Hash::Grid;
 use Bio::Community;
@@ -10,27 +11,40 @@ use Bio::Community::Meta;
 use Bio::Community::Tools::Accumulator;
 use Data::Dumper;
 
+$| = 1;
 
-
-my ($file_input, $file_output, $help);
+my ($file_input, $file_output, $help, $verbose, $mverbose, $ini_year,$end_year);
 
 ######## options/help ########
 GetOptions(
     'help|h'                    => \$help,
+    'verbose|v'                 => \$verbose,
+    'mverbose|vv'               => \$mverbose,
     'input|i=s'                 => \$file_input,
     'output|o=s'                => \$file_output,
+    'iniyear|iy=i'              => \$ini_year,
+    'endyear|ey=i'              => \$end_year,
 ) or die "\n Invalid commmand line options.\n";
 
 my $USAGE =<<USAGE;
     Usage:
          $0 [-h|--help]
+            [-v|--verbose]
+            [-vv|--mverbose]
             [-i|--input]
             [-o|--output]
+            [-iy|--iniyear]
+            [-ey|--endyear]
+            
 
     Options:
           -h,  --help          show this help
+          -v,  --verbose       verbose mode
+          -vv, --mverbose       more verbose mode
           -i,  --input         input file
           -o,  --output        output file
+          -iy, --iniyear       start year
+          -ey, --endyear       end year
          
 USAGE
 
@@ -44,15 +58,17 @@ if(!$file_input){
     print "$USAGE\n";
     exit 1
 }
-if(!$file_output){
-    $file_output = 'output.dat';
+if(!$ini_year){
+    $ini_year = 0;
 }
-
+if(!$end_year){
+    $end_year = 9999;
+}
 
 ##
 # Open the file for read access:
 open INPUT, '<', $file_input;
-open OUTPUT, '+>', $file_output;
+open OUTPUT, '+>', 'localization.dat';
 print OUTPUT "latitude;longitude;species\n";
 
 # Set the character which will be used to indicate the end of a line.
@@ -60,22 +76,23 @@ local $/ = "\n";
 
 ###################################
 print "== Creating grid\n";
+## Cell dimensions vary with latitude 
+## Length  Cell width  Cell height
+##  1     ≤ 5000km     ×    5000km
+##  2     ≤ 1250km     ×    625km
+##  3     ≤ 156km      ×    156km
+##  4     ≤ 39.1km     ×    19.5km
+##  5     ≤ 4.89km     ×    4.89km
+##  6     ≤ 1.22km     ×    0.61km
+##  7     ≤ 153m       ×    153m
+##  8     ≤ 38.2m      ×    19.1m
+##  9     ≤ 4.77m      ×    4.77m
+##  10    ≤ 1.19m      ×    0.596m
+##  11    ≤ 149mm      ×    149mm
+##  12    ≤ 37.2mm     ×    18.6mm
 
-#Length  Cell width  Cell height
-# 1     ≤ 5,000km    ×    5,000km
-# 2     ≤ 1,250km    ×    625km
-# 3     ≤ 156km      ×    156km
-# 4     ≤ 39.1km     ×    19.5km
-# 5     ≤ 4.89km     ×    4.89km
-# 6     ≤ 1.22km     ×    0.61km
-# 7     ≤ 153m       ×    153m
-# 8     ≤ 38.2m      ×    19.1m
-# 9     ≤ 4.77m      ×    4.77m
-# 10    ≤ 1.19m      ×    0.596m
-# 11    ≤ 149mm      ×    149mm
-# 12    ≤ 37.2mm     ×    18.6mm
 
-my $precision = 3;
+my $precision = 5;
 my $south_west_latitude  = 36.8;
 my $south_west_longidude = -9.7;
 my $north_east_latitude  = 42.1;
@@ -101,7 +118,7 @@ foreach my $geohash (@$geohash_array_ref) {
 
 ###################################
 my @parse_line = ();
-my ($ncol_gbifid, $ncol_lat, $ncol_lon, $ncol_species);
+my ($ncol_gbifid, $ncol_lat, $ncol_lon, $ncol_species, $ncol_year);
 
 my $lat_min=99;
 my $lat_max=-99;
@@ -132,6 +149,9 @@ while (my $row = <INPUT>){
             }elsif($col =~ /taxonkey/){
                 $ncol_species = $ncol;
                 #print "species: $ncol_species \n";
+            }elsif($col =~ /year/){
+                $ncol_year = $ncol;
+                #print "year: $ncol_year \n";
             }
             $ncol ++;
         }
@@ -148,8 +168,9 @@ while (my $row = <INPUT>){
         my $lat     = $parse_line[$ncol_lat];
         my $lon     = $parse_line[$ncol_lon];
         my $species = $parse_line[$ncol_species];
+        my $year    = $parse_line[$ncol_year];
         
-        if($lon > -10 and $lon < -6 and $lat > 36 and $lat < 43){
+        if($lon > -10 and $lon < -6 and $lat > 36 and $lat < 43 and $year >= $ini_year and $year <= $end_year){
             ## min max latitude
             $lat_min = $lat if($lat < $lat_min);
             $lat_max = $lat if($lat > $lat_max);
@@ -189,168 +210,169 @@ while (my $row = <INPUT>){
     }
 }
 
-print " lat range: $lat_min  $lat_max      lon range: $lon_min  $lon_max  \n";
+if($mverbose){
+    print " lat range: $lat_min  $lat_max      lon range: $lon_min  $lon_max  \n";
 
-my $south_west_latitude = sprintf "%.1f", $lat_min - 0.1;
-my $south_west_longidude = sprintf "%.1f", $lon_min + 0.1;
-my $north_east_latitude = sprintf "%.1f", $lat_max + 0.1;
-my $north_east_longitude = sprintf "%.1f", $lon_max + 0.1;
+    my $south_west_latitude = sprintf "%.1f", $lat_min - 0.1;
+    my $south_west_longidude = sprintf "%.1f", $lon_min + 0.1;
+    my $north_east_latitude = sprintf "%.1f", $lat_max + 0.1;
+    my $north_east_longitude = sprintf "%.1f", $lon_max + 0.1;
 
-print "\n";
-print "($south_west_longidude,$north_east_latitude) |----------------------| ($north_east_longitude,$north_east_latitude)\n";
-print "            |                      |\n"; 
-print "            |                      |\n";
-print "            |                      |\n";
-print "            |                      |\n";
-print "            |                      |\n";
-print "            |                      |\n";
-print "($south_west_longidude,$south_west_latitude) |----------------------| ($north_east_longitude,$south_west_latitude)\n";
-print "\n";
+    print "\n";
+    print "($south_west_longidude,$north_east_latitude) |----------------------| ($north_east_longitude,$north_east_latitude)\n";
+    print "            |                      |\n"; 
+    print "            |                      |\n";
+    print "            |                      |\n";
+    print "            |                      |\n";
+    print "            |                      |\n";
+    print "            |                      |\n";
+    print "($south_west_longidude,$south_west_latitude) |----------------------| ($north_east_longitude,$south_west_latitude)\n";
+    print "\n";
+}
 
 close INPUT;
 close OUTPUT;
 
-print Dumper(\%big_data);
+#print Dumper(\%big_data);
+#exit;
 
 
+print "== statistics\n";
 
-my @community_array = ();
+my $size_geo = keys %big_data;
+
+open OUTPUT, '+>', $file_output;
+
+open OUTGEO, '+>', "geohash.dat";
+
+my @community_list = ();
+my $community_accepted = 0;
 foreach my $geohash (sort keys %big_data){
-    print "\n== Community $geohash \n";
     
+    ## filter geohash localization
+    my $gh = Geo::Hash->new;
+    my ( $lat, $lon ) = $gh->decode( $geohash );
+    if($lat > 39.7 or $lat < 37.3 ){
+        print "skip  $geohash ($lat, $lon)\n" if($verbose);
+        next;
+    }
+    
+    print "  = Community $geohash ($lat, $lon)\n" if($verbose);
     my $community = Bio::Community->new( -name => $geohash );
-    
+
+    my @community_member_list = ();
+
     ## Add members to community
     while (my ($specie_key, $specie_val) = each %{ $big_data{$geohash}{'species'} } ){
         my $member = Bio::Community::Member->new( -id => $big_data{$geohash}{'species'}{$specie_key}{'id'} );
-        $community->add_member( $member, $big_data{$geohash}{'species'}{$specie_key}{'count'} );
+        my $member_count = $big_data{$geohash}{'species'}{$specie_key}{'count'};
+        $community->add_member( $member, $member_count );
+        
+        for( my $i=1; $i <= $member_count; $i++ ){
+            push @community_member_list,  $member->id();
+        }
+    }
+    push @community_list, $community;
+    
+
+    my $members_count = $community->get_members_count;
+    my $richness = $community->get_richness;
+    print "   There are $members_count members in the community\n" if($verbose);
+    print "   The total diversity is $richness species\n" if($verbose);
+
+    if($mverbose){
+        while (my $member = $community->next_member) {
+            my $member_id     = $member->id;
+            my $member_count  = $community->get_count($member);
+            my $member_rel_ab = $community->get_rel_ab($member);
+            my $member_rank = $community->get_rank($member);
+            print "     The relative abundance of member $member_id is $member_rel_ab % ($member_count counts). Rank is $member_rank\n";
+        }
     }
     
-    print "   There are ".$community->get_members_count." members in the community\n";
-    print "   The total diversity is ".$community->get_richness." species\n";
-    while (my $member = $community->next_member) {
-        my $member_id     = $member->id;
-        my $member_count  = $community->get_count($member);
-        my $member_rel_ab = $community->get_rel_ab($member);
-        print "     The relative abundance of member $member_id is $member_rel_ab % ($member_count counts)\n";
-    }
+    my $members = $community->get_all_members();
+    #print Dumper($members);
+   
+    ## print header
+    if($members_count > 2){
+        $community_accepted++;
+        print OUTGEO "$lat;$lon;$geohash;1\n";
+        print OUTPUT "Cell $geohash ($lat, $lon)\t*SampleSet*\t1\t1\t1\n";
+        print OUTPUT "$richness\t$members_count\n";
+        for( my $i=1; $i<=$members_count; $i++ ){
+            my $sample_id = sprintf("%05d", $i);
+            print OUTPUT "\t$sample_id";
+        }
+        print OUTPUT "\n";
 
-    push @community_array, $community;
+        ## set matrix
+        my %matrix = (); ## matrix data for random get
+        for( my $i=1; $i<=$members_count; $i++ ){
+            ## get random member
+            my $rand_index = 0 + int(rand($#community_member_list - 0));
+            my $rand_member = $community_member_list[$rand_index];
+    
+            ## remove getted member from community
+            splice @community_member_list, $rand_index, 1;
+            print "$geohash   $members_count  ".@community_member_list."  --> $rand_index (0 - ".@community_member_list.") --> $rand_member\n" if($verbose);
+    
+            while (my $member = $community->next_member) {
+                my $member_id     = $member->id;
+                if($member_id eq $rand_member){
+                    push( @{ $matrix{$member_id} }, 1); 
+                }else{
+                    push( @{ $matrix{$member_id} }, 0); 
+                }
+            }
+        }
+
+        ## print matrix
+        foreach my $member_id (sort {lc $a cmp lc $b} keys %matrix) {
+            print OUTPUT "$member_id";
+            for( my $i=0; $i<$members_count; $i++ ){
+                print OUTPUT "\t".$matrix{$member_id}[$i];
+            }
+            print OUTPUT "\n";
+        }
+
+        #last if($community_accepted == 100);
+    }else{
+        print OUTGEO "$lat;$lon;$geohash;0\n";
+    }
     
 }
+close OUTPUT;
+close OUTGEO;
+
+open INPUT,  '<',  $file_output      or die "Can't read old file: $!";
+open OUTPUT, '>', "$file_output.new" or die "Can't write new file: $!";
+print OUTPUT "*MultipleSampleSets*\t$community_accepted\tPT Community with more then 2 members";
+if($ini_year != 0){
+    print OUTPUT "; start year: $ini_year";
+}
+if($end_year != 9999){
+    print OUTPUT ", end year: $end_year";
+}
+print OUTPUT "\n";
+
+while( <INPUT> ){
+        print OUTPUT $_;
+}
+close OUTPUT;
+
+unlink $file_output;
+rename "$file_output.new", $file_output;
+
 
 ## Meta Community
 my $meta = Bio::Community::Meta->new( -name => 'PT' );
-$meta->add_communities( \@community_array );
+$meta->add_communities( \@community_list );
 print "\n== Metacommunity contains:\n";
 print "   ".$meta->get_communities_count." communities\n";
 print "   ".$meta->get_richness." species\n";
 print "   ".$meta->get_members_count." individuals\n";
-print "   ".$meta->get_members_count." individuals\n";
 
-
-## A collector curve
-## In a collector curve, an increasing number of communities is randomly drawn and combined and their cumulative alpha diversity is determined.
-print "\n== Collector curve\n";
-if(1){
-    my $collector = Bio::Community::Tools::Accumulator->new(
-            -metacommunity   => $meta,
-            -type            => 'collector',
-            -num_repetitions => 50,
-            -verbose         => 1,
-    );
-    my $numbers = $collector->get_numbers;
-    my $strings = $collector->get_strings;
-    print Dumper($numbers);
-    print Dumper($strings);
-}
-
-## A rarefaction curve, with custom parameters
-## In a rarefaction curve, an increasing number of randomly drawn members is sampled from the given communities and alpha diversity is calculated.
-print "== Rarefaction curve\n";
-if(1){
-    my @alpha_types = ['observed', 'simpson', 'shannon'];
-    my $rarefaction = Bio::Community::Tools::Accumulator->new(
-             -metacommunity   => $meta,
-             -type            => 'rarefaction',
-             -num_repetitions => 50,
-             -num_ticks       => 20,
-             -tick_spacing    => 'linear', #logarithmic
-             -alpha_types     => @alpha_types,
-             -verbose         => 1,
-    );
-    my $numbers = $rarefaction->get_numbers;
-    my $strings = $rarefaction->get_strings;
-    print Dumper($numbers);
-    print Dumper($strings);
-    
-    ## Write results to files
-    #for my $i (0 .. $#alpha_types) {
-    #    my $alpha_type = $alpha_types[$i];
-    #    my $out_file = "rarefaction_$alpha_type.txt";
-    #    print "   Writing accumulation curve to file '$out_file'\n";
-    #    open my $out, '>', $out_file or die "Error: Could not write file '$out_file'\n";
-    #    print $out $strings->[$i];
-    #    close $out;
-    #}
-}
-
-## String for the desired type of alpha diversity ('observed' by default).
-## http://search.cpan.org/~fangly/Bio-Community-0.001004/lib/Bio/Community/Alpha.pm
-#  Richness (or estimated number of species):
-#    * observed :  C<S>
-#    * menhinick:  C<S/sqrt(n)>, where C<n> is the total counts (observations).
-#    * margalef : C<(S-1)/ln(n)>
-#    * chao1    : Bias-corrected chao1 richness, C<S+n1*(n1-1)/(2*(n2+1))>
-#                 where C<n1> and C<n2> are the number of singletons and
-#                 doubletons, respectively. Particularly useful for data
-#                 skewed toward the low-abundance species, e.g. microbial.
-#                 Based on counts, not relative abundance.
-#    * ace      : Abundance-based Coverage Estimator (ACE). Based on
-#                 counts, not relative abundance.
-#
-#   Evenness (or equitability):
-#    * buzas      : Buzas & Gibson's (or Sheldon's) evenness, C<e^H/S>.
-#                   Ranges from 0 to 1.
-#    * heip       : Heip's evenness, C<(e^H-1)/(S-1)>. Ranges from 0 to 1.
-#    * shannon_e  : Shannon's evenness, or the Shannon-Wiener index
-#                   divided by the maximum diversity possible in the
-#                   community. Ranges from 0 to 1.
-#    * simpson_e  : Simpson's evenness, or the Simpson's Index of Diversity
-#                   divided by the maximum diversity possible in the
-#                   community. Ranges from 0 to 1.
-#    * brillouin_e: Brillouin's evenness, or the Brillouin's index divided
-#                   by the maximum diversity possible in the community.
-#                   Ranges from 0 to 1.
-#    * hill_e     : Hill's C<E_2,1> evenness, i.e. Simpson's Reciprocal
-#                   index divided by C<e^H>.
-#    * mcintosh_e : McIntosh's evenness.
-#    * camargo    : Camargo's eveness. Ranges from 0 to 1.
-#
-#   Indices (accounting for species abundance):
-#    * shannon  : Shannon-Wiener index C<H>. Emphasizes richness and ranges
-#                 from 0 to infinity.
-#    * simpson  : Simpson's Index of Diversity C<1-D> (or Gini-Simpson
-#                 index), where C<D> is Simpson's dominance index. C<1-D>
-#                 is the probability that two individuals taken randomly
-#                 are not from the same species. Emphasizes evenness and
-#                 anges from 0 to 1.
-#    * simpson_r: Simpson's Reciprocal Index C<1/D>. Ranges from 1 to
-#                 infinity.
-#    * brillouin: Brillouin's index, appropriate for small, completely
-#                 censused communities. Based on counts, not relative
-#                 abundance.
-#    * hill     : Hill's C<N_inf> index, the inverse of the Berger-Parker
-#                 dominance. Ranges from 1 to infinity.
-#    * mcintosh : McIntosh's index. Based on counts, not relative abundance.
-#
-#   Dominance (B<not> diversity metrics since the higher their value, the
-#   lower the diversity):
-#    * simpson_d: Simpson's Dominance Index C<D>. Ranges from 0 to 1.
-#    * berger   : Berger-Parker dominance, i.e. the proportion of the most
-#                 abundant species. Ranges from 0 to 1.
-
-
+print "   $community_accepted with more then 2 members\n";
 
 
 
